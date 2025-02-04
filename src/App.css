@@ -1,0 +1,62 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* Ensure the app takes up at least the full viewport height */
+  align-items: center;
+  padding: 20px;
+}
+
+.app-header {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+  width: 100%;
+  border-radius: 10px; /* Add rounded corners */
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center; /* Center the title */
+  align-items: center;
+  padding: 10px 20px; /* Add padding to the sides */
+}
+
+.app-header h1 {
+  margin: 0; /* Remove default margin */
+}
+
+.app-footer {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 10px 0;
+  width: 100%;
+  margin-top: auto; /* Push the footer to the bottom */
+  border-radius: 10px; /* Add rounded corners */
+  display: flex;
+  justify-content: space-around; /* Distribute space evenly */
+  align-items: center;
+  padding-left: 20px; /* Add some padding on the left */
+  padding-right: 20px; /* Add some padding on the right */
+}
+
+.app-footer a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.5em;
+}
+
+.labels-container {
+  width: 80%;
+  max-width: 800px; /* Optional: set a maximum width */
+  flex-grow: 1; /* Allow the container to grow and take up remaining space */
+  display: flex; /* Add flex display */
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center items horizontally */
+}
+
+/* Media query for responsiveness */
+@media (max-width: 600px) {
+  .labels-container {
+    width: 95%; /* Adjust width for smaller screens */
+  }
+}

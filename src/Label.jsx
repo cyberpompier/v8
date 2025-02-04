@@ -1,7 +1,7 @@
 import React from 'react';
 import './Label.css';
 
-function Label({ label, onIconClick }) {
+function Label({ label, onIconClick, onVerifyClick }) {
   return (
     <div className="label-container">
       <div className="label-icon" onClick={onIconClick}>
@@ -22,7 +22,7 @@ function Label({ label, onIconClick }) {
           Status: {label.status}
         </div>
       </div>
-      <button className="label-button">Vérifier</button>
+      <button className="label-button" onClick={onVerifyClick}>Vérifier</button>
     </div>
   );
 }

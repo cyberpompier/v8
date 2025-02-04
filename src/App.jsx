@@ -8,6 +8,7 @@ import LabelPopup from './LabelPopup';
 import Home from './Home';
 import Materiels from './Materiels';
 import Parametres from './Parametres';
+import Verification from './Verification';
 import './App.css';
 
 // Initialize Firebase
@@ -27,6 +28,7 @@ function App() {
           <Route path="/labels" element={<LabelsPage />} />
           <Route path="/materiels" element={<Materiels />} />
           <Route path="/parametres" element={<Parametres />} />
+          <Route path="/verification/:vehicleId" element={<Verification />} />
         </Routes>
 
         <footer className="app-footer">
@@ -96,6 +98,10 @@ function LabelsPage() {
             key={label.id}
             label={label}
             onIconClick={() => handleIconClick(label)}
+            onVerifyClick={() => {
+              // Navigate to the verification page with the vehicle's ID
+              window.location.href = `/verification/${label.id}`;
+            }}
           />
         ))}
       </div>

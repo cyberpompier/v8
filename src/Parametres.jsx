@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
     import './Parametres.css';
     import { initializeApp } from 'firebase/app';
-    import { getFirestore, collection, getDocs } from 'firebase/firestore';
+    import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
     import firebaseConfig from './firebaseConfig';
 
     // Initialize Firebase
@@ -191,11 +191,12 @@ import React, { useState, useEffect } from 'react';
       const [denomination, setDenomination] = useState('');
       const [quantity, setQuantity] = useState('');
       const [affection, setAffection] = useState('');
-      const [emplacement, setEmplacement] = useState('');
+      const [emplacement, setEmplacement] = useState(''); // This is the selected emplacement
       const [lien, setLien] = useState('');
       const [doc, setDoc] = useState('');
       const [photo, setPhoto] = useState('');
       const [vehicles, setVehicles] = useState([]);
+      const [emplacementOptions, setEmplacementOptions] = useState([]);
 
       useEffect(() => {
         const fetchVehicles = async () => {
@@ -204,7 +205,8 @@ import React, { useState, useEffect } from 'react';
             const vehiclesSnapshot = await getDocs(vehiclesCollection);
             const vehiclesList = vehiclesSnapshot.docs.map(doc => ({
               id: doc.id,
-              denomination: doc.data().denomination
+              denomination: doc.data().denomination,
+              emplacements: doc.data().emplacements // Store emplacements options
             }));
             setVehicles(vehiclesList);
           } catch (error) {
@@ -215,13 +217,24 @@ import React, { useState, useEffect } from 'react';
         fetchVehicles();
       }, []);
 
+      useEffect(() => {
+        // Update emplacement options based on selected vehicle
+        const selectedVehicle = vehicles.find(vehicle => vehicle.denomination === affection);
+        if (selectedVehicle && typeof selectedVehicle.emplacements === 'string') {
+          // Split the string into an array
+          setEmplacementOptions(selectedVehicle.emplacements.split(',').map(item => item.trim()));
+        } else {
+          setEmplacementOptions([]);
+        }
+      }, [affection, vehicles]);
+
       const handleSubmit = (e) => {
         e.preventDefault();
         const newMateriel = {
           denomination,
           quantity,
           affection,
-          emplacement,
+          emplacement, // Save the selected emplacement
           lien,
           doc,
           photo,
@@ -254,7 +267,7 @@ import React, { useState, useEffect } from 'react';
 
             <label>Affection:</label>
             <select value={affection} onChange={(e) => setAffection(e.target.value)}>
-              <option value="">Select Vehicle</option>
+              <option value="">Sélectionner un véhicule</option>
               {vehicles.map(vehicle => (
                 <option key={vehicle.id} value={vehicle.denomination}>
                   {vehicle.denomination}
@@ -263,7 +276,18 @@ import React, { useState, useEffect } from 'react';
             </select>
 
             <label>Emplacement:</label>
-            <input type="text" value={emplacement} onChange={(e) => setEmplacement(e.target.value)} />
+            <select value={emplacement} onChange={(e) => setEmplacement(e.target.value)}>
+              <option value="">Sélectionner un emplacement</option>
+              {emplacementOptions.length > 0 ? (
+                emplacementOptions.map((option, index) => (
+                  <option key={index} value={option}>
+                    {option}
+                  </option>
+                ))
+              ) : (
+                <option disabled>Aucun emplacement disponible</option>
+              )}
+            </select>
 
             <label>Lien:</label>
             <input type="text" value={lien} onChange={(e) => setLien(e.target.value)} />
@@ -274,7 +298,7 @@ import React, { useState, useEffect } from 'react';
             <label>Photo:</label>
             <input type="file" accept="image/*" onChange={handlePhotoChange} />
             {photo && (
-              <img src={photo} alt="Materiel Photo" style={{ maxWidth: '100px', marginTop: '10px' }} />
+              <img src={photo} alt="Photo du matériel" style={{ maxWidth: '100px', marginTop: '10px' }} />
             )}
 
             <div className="form-buttons">

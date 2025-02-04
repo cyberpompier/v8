@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Materiel from './Materiel';
 import MaterielPopup from './MaterielPopup';
 import './Materiels.css';
@@ -39,9 +39,9 @@ const materielsData = [
 ];
 
 function Materiels() {
-  const [materiels, setMateriels] = useState(materielsData);
-  const [selectedMateriel, setSelectedMateriel] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [materiels, setMateriels] = React.useState(materielsData);
+  const [selectedMateriel, setSelectedMateriel] = React.useState(null);
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const handleIconClick = (materiel) => {
     setSelectedMateriel(materiel);

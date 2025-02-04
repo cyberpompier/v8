@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import Label from './Label';
 import LabelPopup from './LabelPopup';
 import Home from './Home';
-import Materiels from './Materiels'; // Import the new component
+import Materiels from './Materiels';
+import Parametres from './Parametres';
 import './App.css';
 
 const labelsData = [
@@ -13,7 +14,7 @@ const labelsData = [
     description: 'Fourgon Pompe-Tonne Léger',
     verificationDate: '12/06/2023',
     icon: 'fire-truck',
-    image: 'fire-truck.png', // Placeholder image
+    image: 'fire-truck.png',
   },
   {
     id: 2,
@@ -21,14 +22,40 @@ const labelsData = [
     description: 'Véhicule de Secours et d\'Assistance aux Victimes',
     verificationDate: '14/06/2023',
     icon: 'ambulance',
-    image: 'ambulance.png', // Placeholder image
+    image: 'ambulance.png',
   },
 ];
 
 function App() {
-  const [labels, setLabels] = useState(labelsData);
-  const [selectedLabel, setSelectedLabel] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  return (
+    <Router>
+      <div className="app">
+        <header className="app-header">
+          <h1>Gestion des Véhicules</h1>
+        </header>
+
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/labels" element={<LabelsPage />} />
+          <Route path="/materiels" element={<Materiels />} />
+          <Route path="/parametres" element={<Parametres labelsData={labelsData} />} />
+        </Routes>
+
+        <footer className="app-footer">
+          <Link to="/" className="home-icon">🏠</Link>
+          <Link to="/labels" className="vehicle-icon">🚒</Link>
+          <Link to="/materiels" className="materiels-icon">🛠️</Link>
+          <Link to="/parametres" className="parametres-icon">⚙️</Link>
+        </footer>
+      </div>
+    </Router>
+  );
+}
+
+function LabelsPage() {
+  const [labels, setLabels] = React.useState(labelsData);
+  const [selectedLabel, setSelectedLabel] = React.useState(null);
+  const [isEditing, setIsEditing] = React.useState(false);
 
   const handleIconClick = (label) => {
     setSelectedLabel(label);
@@ -52,45 +79,26 @@ function App() {
   };
 
   return (
-    <Router>
-      <div className="app">
-        <header className="app-header">
-          <h1>Gestion des Véhicules</h1>
-        </header>
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/labels" element={
-            <div className="labels-container">
-              {labels.map((label) => (
-                <Label
-                  key={label.id}
-                  label={label}
-                  onIconClick={() => handleIconClick(label)}
-                />
-              ))}
-            </div>
-          } />
-          <Route path="/materiels" element={<Materiels />} /> {/* Add the new route */}
-        </Routes>
-
-        {selectedLabel && (
-          <LabelPopup
-            label={selectedLabel}
-            onClose={handleClosePopup}
-            isEditing={isEditing}
-            onEditClick={handleEditClick}
-            onSave={handleSave}
+    <div className="labels-page">
+      <div className="labels-container">
+        {labels.map((label) => (
+          <Label
+            key={label.id}
+            label={label}
+            onIconClick={() => handleIconClick(label)}
           />
-        )}
-
-        <footer className="app-footer">
-          <Link to="/" className="home-icon">🏠</Link>
-          <Link to="/labels" className="vehicle-icon">🚒</Link>
-          <Link to="/materiels" className="materiels-icon">🛠️</Link> {/* Add the new icon */}
-        </footer>
+        ))}
       </div>
-    </Router>
+      {selectedLabel && (
+        <LabelPopup
+          label={selectedLabel}
+          onClose={handleClosePopup}
+          isEditing={isEditing}
+          onEditClick={handleEditClick}
+          onSave={handleSave}
+        />
+      )}
+    </div>
   );
 }
 

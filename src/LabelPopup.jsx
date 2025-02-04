@@ -33,11 +33,26 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
         <span className="close-button" onClick={onClose}>
           &times;
         </span>
+
+        <div className="photo-container">
+          <img src={label.photo} alt={label.denomination} />
+        </div>
+
         <h2>{label.denomination}</h2>
+        <p>Caserne: {label.caserne}</p>
+        <p>Type: {label.vehicleType}</p>
+        <p>Emplacement: {label.emplacement}</p>
+        <p>
+          Lien: <a href={label.lien} target="_blank" rel="noopener noreferrer">{label.lien}</a>
+        </p>
+        <p>
+          Documentation: <a href={label.documentation} target="_blank" rel="noopener noreferrer">{label.documentation}</a>
+        </p>
+        <p>Status: {label.status}</p>
 
         {isEditing ? (
           <div className="edit-form">
-             <label>Denomination:</label>
+            <label>Denomination:</label>
             <input
               type="text"
               name="denomination"
@@ -72,14 +87,14 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
               value={editedLabel.emplacement}
               onChange={handleChange}
             />
-             <label>Lien:</label>
+            <label>Lien:</label>
             <input
               type="text"
               name="lien"
               value={editedLabel.lien}
               onChange={handleChange}
             />
-             <label>Documentation:</label>
+            <label>Documentation:</label>
             <input
               type="text"
               name="documentation"
@@ -93,7 +108,7 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
               onChange={handleChange}
             />
             {editedLabel.photo && (
-              <img src={editedLabel.url} alt="Preview" style={{maxWidth: '100px'}} />
+              <img src={editedLabel.url} alt="Preview" style={{ maxWidth: '100px' }} />
             )}
             <label>Status:</label>
             <input
@@ -104,18 +119,7 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
             />
             <button onClick={handleSaveClick}>Save</button>
           </div>
-        ) : (
-          <>
-            <img src={label.url} alt={label.denomination} />
-            <p>Caserne: {label.caserne}</p>
-            <p>Type: {label.vehicleType}</p>
-            <p>Emplacement: {label.emplacement}</p>
-             <p>Lien: {label.lien}</p>
-              <p>Documentation: {label.documentation}</p>
-            <p>Status: {label.status}</p>
-            <button onClick={onEditClick}>Edit</button>
-          </>
-        )}
+        ) : null}
       </div>
     </div>
   );

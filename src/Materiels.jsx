@@ -1,47 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import firebaseConfig from './firebaseConfig';
 import Materiel from './Materiel';
 import MaterielPopup from './MaterielPopup';
 import './Materiels.css';
 
-const materielsData = [
-  {
-    id: 1,
-    title: 'Tuyau d\'incendie',
-    description: 'Tuyau de 20 mètres',
-    verificationDate: '15/06/2023',
-    icon: 'hose',
-    image: 'hose.png',
-  },
-  {
-    id: 2,
-    title: 'Extincteur',
-    description: 'Extincteur à poudre ABC',
-    verificationDate: '10/06/2023',
-    icon: 'extinguisher',
-    image: 'extinguisher.png',
-  },
-  {
-    id: 3,
-    title: 'Casque de pompier',
-    description: 'Casque avec visière',
-    verificationDate: '20/06/2023',
-    icon: 'helmet',
-    image: 'helmet.png',
-  },
-  {
-    id: 4,
-    title: 'Hache de pompier',
-    description: 'Hache avec manche en fibre de verre',
-    verificationDate: '25/06/2023',
-    icon: 'axe',
-    image: 'axe.png',
-  },
-];
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 function Materiels() {
-  const [materiels, setMateriels] = React.useState(materielsData);
-  const [selectedMateriel, setSelectedMateriel] = React.useState(null);
-  const [isEditing, setIsEditing] = React.useState(false);
+  const [materiels, setMateriels] = useState([]);
+  const [selectedMateriel, setSelectedMateriel] = useState(null);
+
+  useEffect(() => {
+    const fetchMateriels = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "materials"));
+        const fetchedMateriels = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          denomination: doc.data().denomination,
+          quantity: doc.data().quantity,
+          affection: doc.data().affection,
+          emplacement: doc.data().emplacement,
+          lien: doc.data().lien,
+          doc: doc.data().doc,
+          photo: doc.data().photo,
+          ...doc.data()
+        }));
+        console.log("Données récupérées de Firebase :", fetchedMateriels); // Ajout d'un console.log
+        setMateriels(fetchedMateriels);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des matériels :", error);
+      }
+    };
+
+    fetchMateriels();
+  }, []);
 
   const handleIconClick = (materiel) => {
     setSelectedMateriel(materiel);
@@ -49,19 +45,6 @@ function Materiels() {
 
   const handleClosePopup = () => {
     setSelectedMateriel(null);
-    setIsEditing(false);
-  };
-
-  const handleEditClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = (updatedMateriel) => {
-    setMateriels(materiels.map(materiel =>
-      materiel.id === updatedMateriel.id ? updatedMateriel : materiel
-    ));
-    setSelectedMateriel(updatedMateriel);
-    setIsEditing(false);
   };
 
   return (
@@ -81,9 +64,6 @@ function Materiels() {
         <MaterielPopup
           materiel={selectedMateriel}
           onClose={handleClosePopup}
-          isEditing={isEditing}
-          onEditClick={handleEditClick}
-          onSave={handleSave}
         />
       )}
     </div>

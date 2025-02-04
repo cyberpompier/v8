@@ -1,31 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './MaterielPopup.css';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import firebaseConfig from './firebaseConfig';
 
-function MaterielPopup({ materiel, onClose, isEditing, onEditClick, onSave }) {
-  const [editedMateriel, setEditedMateriel] = useState({ ...materiel });
-  const [selectedImage, setSelectedImage] = useState(null);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
+function MaterielPopup({ materiel, onClose }) {
+  const [materielData, setMaterielData] = useState(null);
 
-    if (type === 'file') {
-      const file = files[0];
-      setSelectedImage(file);
-      setEditedMateriel(prevMateriel => ({
-        ...prevMateriel,
-        image: URL.createObjectURL(file) // Use a local URL for preview
-      }));
-    } else {
-      setEditedMateriel(prevMateriel => ({
-        ...prevMateriel,
-        [name]: value
-      }));
-    }
-  };
+  useEffect(() => {
+    const fetchMaterielDetails = async () => {
+      try {
+        const docRef = doc(db, "materials", materiel.id);
+        const docSnap = await getDoc(docRef);
 
-  const handleSaveClick = () => {
-    onSave(editedMateriel);
-  };
+        if (docSnap.exists()) {
+          setMaterielData(docSnap.data());
+        } else {
+          console.log("Aucun document trouvé !");
+          setMaterielData(null);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des détails du matériel :", error);
+      }
+    };
+
+    fetchMaterielDetails();
+  }, [materiel.id]);
+
+  if (!materielData) {
+    return (
+      <div className="materiel-popup">
+        <div className="popup-content">
+          <span className="close-button" onClick={onClose}>
+            &times;
+          </span>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="materiel-popup">
@@ -33,50 +50,21 @@ function MaterielPopup({ materiel, onClose, isEditing, onEditClick, onSave }) {
         <span className="close-button" onClick={onClose}>
           &times;
         </span>
-        <h2>{materiel.title}</h2>
 
-        {isEditing ? (
-          <div className="edit-form">
-            <label>Title:</label>
-            <input
-              type="text"
-              name="title"
-              value={editedMateriel.title}
-              onChange={handleChange}
-            />
-            <label>Description:</label>
-            <input
-              type="text"
-              name="description"
-              value={editedMateriel.description}
-              onChange={handleChange}
-            />
-            <label>Verification Date:</label>
-            <input
-              type="text"
-              name="verificationDate"
-              value={editedMateriel.verificationDate}
-              onChange={handleChange}
-            />
-            <label>Image:</label>
-            <input
-              type="file"
-              name="image"
-              onChange={handleChange}
-            />
-            {editedMateriel.image && (
-              <img src={editedMateriel.image} alt="Preview" style={{ maxWidth: '100px' }} />
-            )}
-            <button onClick={handleSaveClick}>Save</button>
-          </div>
-        ) : (
-          <>
-            <img src={materiel.image} alt={materiel.title} />
-            <p>{materiel.description}</p>
-            <p>Vérifié le {materiel.verificationDate}</p>
-            <button onClick={onEditClick}>Edit</button>
-          </>
-        )}
+        <div className="photo-container">
+          <img src={materielData.photo} alt={materielData.denomination} />
+        </div>
+
+        <h2>{materielData.denomination}</h2>
+        <p>Quantité: {materielData.quantity}</p>
+        <p>Affectation: {materielData.affection}</p>
+        <p>Emplacement: {materielData.emplacement}</p>
+        <p>
+          Lien: <a href={materielData.lien} target="_blank" rel="noopener noreferrer">{materielData.lien}</a>
+        </p>
+        <p>
+          Documentation: <a href={materielData.doc} target="_blank" rel="noopener noreferrer">{materielData.doc}</a>
+        </p>
       </div>
     </div>
   );

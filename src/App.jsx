@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import firebaseConfig from './firebaseConfig';
 import Label from './Label';
 import LabelPopup from './LabelPopup';
 import Home from './Home';
@@ -7,24 +10,9 @@ import Materiels from './Materiels';
 import Parametres from './Parametres';
 import './App.css';
 
-const labelsData = [
-  {
-    id: 1,
-    title: 'FPTL 417',
-    description: 'Fourgon Pompe-Tonne Léger',
-    verificationDate: '12/06/2023',
-    icon: 'fire-truck',
-    image: 'fire-truck.png',
-  },
-  {
-    id: 2,
-    title: 'VSAV 219',
-    description: 'Véhicule de Secours et d\'Assistance aux Victimes',
-    verificationDate: '14/06/2023',
-    icon: 'ambulance',
-    image: 'ambulance.png',
-  },
-];
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 function App() {
   return (
@@ -38,7 +26,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/labels" element={<LabelsPage />} />
           <Route path="/materiels" element={<Materiels />} />
-          <Route path="/parametres" element={<Parametres labelsData={labelsData} />} />
+          <Route path="/parametres" element={<Parametres />} />
         </Routes>
 
         <footer className="app-footer">
@@ -53,9 +41,31 @@ function App() {
 }
 
 function LabelsPage() {
-  const [labels, setLabels] = React.useState(labelsData);
-  const [selectedLabel, setSelectedLabel] = React.useState(null);
-  const [isEditing, setIsEditing] = React.useState(false);
+  const [labels, setLabels] = useState([]);
+  const [selectedLabel, setSelectedLabel] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    const fetchLabels = async () => {
+      const querySnapshot = await getDocs(collection(db, "vehicles"));
+      const fetchedLabels = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        immatriculation: doc.data().immatriculation,
+        caserne: doc.data().caserne,
+        vehicleType: doc.data().vehicleType,
+        emplacement: doc.data().emplacement,
+        lien: doc.data().lien,
+        documentation: doc.data().documentation,
+        photo: doc.data().url,
+        status: doc.data().status,
+        denomination: doc.data().denomination,
+        ...doc.data()
+      }));
+      setLabels(fetchedLabels);
+    };
+
+    fetchLabels();
+  }, []);
 
   const handleIconClick = (label) => {
     setSelectedLabel(label);

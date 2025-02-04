@@ -13,7 +13,7 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
       setSelectedImage(file);
       setEditedLabel(prevLabel => ({
         ...prevLabel,
-        image: URL.createObjectURL(file) // Use a local URL for preview
+        url: URL.createObjectURL(file) // Use a local URL for preview
       }));
     } else {
       setEditedLabel(prevLabel => ({
@@ -33,47 +33,86 @@ function LabelPopup({ label, onClose, isEditing, onEditClick, onSave }) {
         <span className="close-button" onClick={onClose}>
           &times;
         </span>
-        <h2>{label.title}</h2>
+        <h2>{label.denomination}</h2>
 
         {isEditing ? (
           <div className="edit-form">
-            <label>Title:</label>
+             <label>Denomination:</label>
             <input
               type="text"
-              name="title"
-              value={editedLabel.title}
+              name="denomination"
+              value={editedLabel.denomination}
               onChange={handleChange}
             />
-            <label>Description:</label>
+            <label>Immatriculation:</label>
             <input
               type="text"
-              name="description"
-              value={editedLabel.description}
+              name="immatriculation"
+              value={editedLabel.immatriculation}
               onChange={handleChange}
             />
-            <label>Verification Date:</label>
+            <label>Caserne:</label>
             <input
               type="text"
-              name="verificationDate"
-              value={editedLabel.verificationDate}
+              name="caserne"
+              value={editedLabel.caserne}
               onChange={handleChange}
             />
-            <label>Image:</label>
+            <label>Vehicle Type:</label>
+            <input
+              type="text"
+              name="vehicleType"
+              value={editedLabel.vehicleType}
+              onChange={handleChange}
+            />
+            <label>Emplacement:</label>
+            <input
+              type="text"
+              name="emplacement"
+              value={editedLabel.emplacement}
+              onChange={handleChange}
+            />
+             <label>Lien:</label>
+            <input
+              type="text"
+              name="lien"
+              value={editedLabel.lien}
+              onChange={handleChange}
+            />
+             <label>Documentation:</label>
+            <input
+              type="text"
+              name="documentation"
+              value={editedLabel.documentation}
+              onChange={handleChange}
+            />
+            <label>Photo:</label>
             <input
               type="file"
-              name="image"
+              name="url"
               onChange={handleChange}
             />
-            {editedLabel.image && (
-              <img src={editedLabel.image} alt="Preview" style={{maxWidth: '100px'}} />
+            {editedLabel.photo && (
+              <img src={editedLabel.url} alt="Preview" style={{maxWidth: '100px'}} />
             )}
+            <label>Status:</label>
+            <input
+              type="text"
+              name="status"
+              value={editedLabel.status}
+              onChange={handleChange}
+            />
             <button onClick={handleSaveClick}>Save</button>
           </div>
         ) : (
           <>
-            <img src={label.image} alt={label.title} />
-            <p>{label.description}</p>
-            <p>Vérifié le {label.verificationDate}</p>
+            <img src={label.url} alt={label.denomination} />
+            <p>Caserne: {label.caserne}</p>
+            <p>Type: {label.vehicleType}</p>
+            <p>Emplacement: {label.emplacement}</p>
+             <p>Lien: {label.lien}</p>
+              <p>Documentation: {label.documentation}</p>
+            <p>Status: {label.status}</p>
             <button onClick={onEditClick}>Edit</button>
           </>
         )}

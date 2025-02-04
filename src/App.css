@@ -30,13 +30,14 @@
   text-align: center;
   padding: 10px 0;
   width: 100%;
-  margin-top: auto; /* Push the footer to the bottom */
   border-radius: 10px; /* Add rounded corners */
   display: flex;
   justify-content: space-around; /* Distribute space evenly */
   align-items: center;
   padding-left: 20px; /* Add some padding on the left */
   padding-right: 20px; /* Add some padding on the right */
+  position: sticky; /* Stick the footer to the bottom */
+  bottom: 0;
 }
 
 .app-footer a {

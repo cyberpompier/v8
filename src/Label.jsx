@@ -1,4 +1,4 @@
-l'etiquetteimport React from 'react';
+import React from 'react';
 import './Label.css';
 
 function Label({ label, onIconClick }) {

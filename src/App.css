@@ -1,7 +1,7 @@
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* Ensure the app takes up at least the full viewport height */
+  min-height: 100vh;
   align-items: center;
   padding: 20px;
 }
@@ -12,19 +12,19 @@
   text-align: center;
   padding: 10px 0;
   width: 100%;
-  border-radius: 10px; /* Add rounded corners */
+  border-radius: 10px;
   margin-bottom: 20px;
   display: flex;
-  justify-content: center; /* Center the title */
+  justify-content: center;
   align-items: center;
-  padding: 10px 20px; /* Add padding to the sides */
-  position: sticky; /* Stick the header to the top */
+  padding: 10px 20px;
+  position: sticky;
   top: 0;
-  z-index: 100; /* Ensure it's above other content */
+  z-index: 100;
 }
 
 .app-header h1 {
-  margin: 0; /* Remove default margin */
+  margin: 0;
 }
 
 .app-footer {
@@ -33,14 +33,14 @@
   text-align: center;
   padding: 10px 0;
   width: 100%;
-  margin-top: auto; /* Push the footer to the bottom */
-  border-radius: 10px; /* Add rounded corners */
+  margin-top: auto;
+  border-radius: 10px;
   display: flex;
-  justify-content: space-around; /* Distribute space evenly */
+  justify-content: space-around;
   align-items: center;
-  padding-left: 20px; /* Add some padding on the left */
-  padding-right: 20px; /* Add some padding on the right */
-  position: sticky; /* Stick the footer to the bottom */
+  padding-left: 20px;
+  padding-right: 20px;
+  position: sticky;
   bottom: 0;
 }
 
@@ -51,18 +51,24 @@
 }
 
 .labels-container {
-  width: 80%;
-  max-width: 800px; /* Optional: set a maximum width */
-  flex-grow: 1; /* Allow the container to grow and take up remaining space */
-  display: flex; /* Add flex display */
-  flex-direction: column; /* Stack items vertically */
-  align-items: center; /* Center items horizontally */
+  width: 95%;
+  max-width: 1200px; /* Increased max-width for larger screens */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Media query for responsiveness */
 @media (max-width: 600px) {
   .labels-container {
-    width: 95%; /* Adjust width for smaller screens */
+    width: 95%; /* Keep width at 95% for smaller screens */
+  }
+}
+
+@media (min-width: 1200px) {
+  .labels-container {
+    width: 95%; /* Keep width at 95% for larger screens */
   }
 }
 

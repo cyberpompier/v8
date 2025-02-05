@@ -1,146 +1,303 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, query, where, doc, updateDoc, getDoc } from 'firebase/firestore';
-import firebaseConfig from './firebaseConfig';
-import './Verification.css';
+    import { useParams, useNavigate } from 'react-router-dom';
+    import { initializeApp } from 'firebase/app';
+    import { getFirestore, collection, getDocs, query, where, doc, updateDoc, getDoc } from 'firebase/firestore';
+    import firebaseConfig from './firebaseConfig';
+    import './Verification.css';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-function Verification() {
-  const { vehicleId } = useParams();
-  const [materiels, setMateriels] = useState([]);
-  const [materielStatuses, setMaterielStatuses] = useState({}); // 'ok', 'anomalie', 'manquant'
-  const navigate = useNavigate();
-  const [vehicleAffection, setVehicleAffection] = useState('');
+    function Verification() {
+      const { vehicleId } = useParams();
+      const [materiels, setMateriels] = useState([]);
+      const [materielStatuses, setMaterielStatuses] = useState({}); // 'ok', 'anomalie', 'manquant'
+      const [comments, setComments] = useState({});
+      const [selectedMaterielId, setSelectedMaterielId] = useState(null);
+      const [commentPopupVisible, setCommentPopupVisible] = useState(false);
+      const navigate = useNavigate();
+      const [vehicleAffection, setVehicleAffection] = useState('');
 
-  useEffect(() => {
-    const fetchVehicleAffection = async () => {
-      try {
-        const vehicleRef = doc(db, "vehicles", vehicleId);
-        const vehicleSnap = await getDoc(vehicleRef);
+      useEffect(() => {
+        const fetchVehicleAffection = async () => {
+          try {
+            const vehicleRef = doc(db, "vehicles", vehicleId);
+            const vehicleSnap = await getDoc(vehicleRef);
 
-        if (vehicleSnap.exists()) {
-          setVehicleAffection(vehicleSnap.data().denomination);
-        } else {
-          console.log("No such document!");
-        }
-      } catch (error) {
-        console.error("Error fetching vehicle affection:", error);
+            if (vehicleSnap.exists()) {
+              setVehicleAffection(vehicleSnap.data().denomination);
+            } else {
+              console.log("No such document!");
+            }
+          } catch (error) {
+            console.error("Error fetching vehicle affection:", error);
+          }
+        };
+
+        fetchVehicleAffection();
+      }, [vehicleId]);
+
+      useEffect(() => {
+        const fetchMateriels = async () => {
+          try {
+            if (vehicleAffection) {
+              const materielsRef = collection(db, "materials");
+              const q = query(materielsRef, where("affection", "==", vehicleAffection));
+              const querySnapshot = await getDocs(q);
+              const fetchedMateriels = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+              setMateriels(fetchedMateriels);
+
+              // Initialize statuses for each material
+              const initialStatuses = {};
+              fetchedMateriels.forEach(materiel => {
+                initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
+              });
+              setMaterielStatuses(initialStatuses);
+
+              // Initialize comments for each material
+              const initialComments = {};
+              fetchedMateriels.forEach(materiel => {
+                initialComments[materiel.id] = materiel.comment || ''; // Initialize with comment from db
+              });
+              setComments(initialComments);
+            }
+          } catch (error) {
+            console.error("Error fetching materials:", error);
+          }
+        };
+
+        fetchMateriels();
+      }, [vehicleId, vehicleAffection]);
+
+      const handleStatusChange = async (materielId, status) => {
+        try {
+          const materielRef = doc(db, "materials", materielId);
+          await updateDoc(materielRef, { status: status }); // Update status in Firestore
+					// Si le statut est "ok", efface les commentaires
+      if (status === 'ok') {
+        await updateDoc(materielRef, { status: status, comment: '' }); // Update status and clear comment in Firestore
+        setComments(prevComments => {
+          const newComments = { ...prevComments };
+          delete newComments[materielId];
+          return newComments;
+        });
+      } else {
+        await updateDoc(materielRef, { status: status }); // Update status in Firestore
       }
-    };
-
-    fetchVehicleAffection();
-  }, [vehicleId]);
-
-  useEffect(() => {
-    const fetchMateriels = async () => {
-      try {
-        if (vehicleAffection) {
-          const materielsRef = collection(db, "materials");
-          const q = query(materielsRef, where("affection", "==", vehicleAffection));
-          const querySnapshot = await getDocs(q);
-          const fetchedMateriels = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
+          setMaterielStatuses(prevStatuses => ({
+            ...prevStatuses,
+            [materielId]: status
           }));
-          setMateriels(fetchedMateriels);
-
-          // Initialize statuses for each material
-          const initialStatuses = {};
-          fetchedMateriels.forEach(materiel => {
-            initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
-          });
-          setMaterielStatuses(initialStatuses);
+        } catch (error) {
+          console.error("Error updating status in Firestore:", error);
         }
-      } catch (error) {
-        console.error("Error fetching materials:", error);
-      }
-    };
 
-    fetchMateriels();
-  }, [vehicleId, vehicleAffection]);
+        if (status === 'anomalie' || status === 'manquant') {
+          setSelectedMaterielId(materielId);
+        }
+      };
 
-  const handleStatusChange = (materielId, status) => {
-    setMaterielStatuses(prevStatuses => ({
-      ...prevStatuses,
-      [materielId]: status
-    }));
-  };
+      const handleCommentSubmit = async (materielId, commentText) => {
+        const timestamp = new Date().toLocaleString();
+        const signature = "User"; // Replace with actual user signature logic
+        const comment = `${timestamp} - ${signature}\n${commentText}`;
 
-  const handleValidate = async () => {
-    try {
-      // Update the 'status' field in Firestore for each material
-      for (const materielId in materielStatuses) {
-        const materielRef = doc(db, "materials", materielId);
-        await updateDoc(materielRef, { status: materielStatuses[materielId] });
-      }
+        setComments(prevComments => ({
+          ...prevComments,
+          [materielId]: comment
+        }));
 
-      navigate('/labels');
-    } catch (error) {
-      console.error("Error updating materials:", error);
-    }
-  };
+        const newStatus = materielStatuses[materielId] === 'manquant' ? 'manquant' : 'anomalie';
 
-  return (
-    <div className="verification">
-      <h2>Verification</h2>
-      {materiels.length > 0 ? (
-        <div className="materiels-container">
-          {materiels.map(materiel => (
-            <div key={materiel.id} className="materiel-container">
-              <div className="materiel-icon">
-                {materiel.photo ? (
-                  <img src={materiel.photo} alt={materiel.denomination} style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    objectFit: 'cover'
-                  }} />
-                ) : (
-                  'N/A'
-                )}
-              </div>
-              <div className="materiel-details">
-                <div className="materiel-title">{materiel.denomination}</div>
-                <div>
-                  Quantité: {materiel.quantity}
+        try {
+          const materielRef = doc(db, "materials", materielId);
+          await updateDoc(materielRef, { comment: comment, status: newStatus }); // Update comment and status in Firestore
+        } catch (error) {
+          console.error("Error updating comment in Firestore:", error);
+        }
+
+        setMaterielStatuses(prevStatuses => ({
+          ...prevStatuses,
+          [materielId]: newStatus
+        }));
+
+        setSelectedMaterielId(null); // Close the popup
+      };
+
+      const handleValidate = async () => {
+        try {
+          // Update the 'status' field in Firestore for each material
+          for (const materielId in materielStatuses) {
+            const materielRef = doc(db, "materials", materielId);
+            await updateDoc(materielRef, { status: materielStatuses[materielId] });
+          }
+
+          navigate('/labels');
+        } catch (error) {
+          console.error("Error updating materials:", error);
+        }
+      };
+
+      const getMaterielStyle = (materielId) => {
+        if (materielStatuses[materielId] === 'anomalie') {
+          return { backgroundColor: 'orange' };
+        }
+        if (materielStatuses[materielId] === 'manquant') {
+          return { backgroundColor: 'red' };
+        }
+        return {};
+      };
+
+      const showCommentPopup = (materielId) => {
+        setSelectedMaterielId(materielId);
+        setCommentPopupVisible(true);
+      };
+
+      const closeCommentPopup = () => {
+        setCommentPopupVisible(false);
+        setSelectedMaterielId(null);
+      };
+
+      return (
+        <div className="verification">
+          <h2>Verification</h2>
+          {materiels.length > 0 ? (
+            <div className="materiels-container">
+              {materiels.map(materiel => (
+                <div
+                  key={materiel.id}
+                  className="materiel-container"
+                  style={getMaterielStyle(materiel.id)}
+                >
+                  <div className="materiel-icon">
+                    {materiel.photo ? (
+                      <img src={materiel.photo} alt={materiel.denomination} style={{
+                        width: '50px',
+                        height: '50px',
+                        borderRadius: '50%',
+                        objectFit: 'cover'
+                      }} />
+                    ) : (
+                      'N/A'
+                    )}
+                  </div>
+                  <div className="materiel-details">
+                    <div className="materiel-title">
+                      {materiel.denomination}
+                      {comments[materiel.id] && (
+                        <span
+                          style={{ marginLeft: '5px', color: 'blue', cursor: 'pointer' }}
+                          onClick={() => showCommentPopup(materiel.id)}
+                        >
+                          ⓘ
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      Quantité: {materiel.quantity}
+                    </div>
+                    <div>
+                      Emplacement: {materiel.emplacement}
+                    </div>
+                  </div>
+                  <div className="status-icons">
+                    <span
+                      className={`status-icon ok ${materielStatuses[materiel.id] === 'ok' ? 'active' : ''}`}
+                      onClick={() => handleStatusChange(materiel.id, 'ok')}
+                    >
+                      OK
+                    </span>
+                    <span
+                      className={`status-icon anomalie ${materielStatuses[materiel.id] === 'anomalie' ? 'active' : ''}`}
+                      onClick={() => handleStatusChange(materiel.id, 'anomalie')}
+                    >
+                      Anomalie
+                    </span>
+                    <span
+                      className={`status-icon manquant ${materielStatuses[materiel.id] === 'manquant' ? 'active' : ''}`}
+                      onClick={() => handleStatusChange(materiel.id, 'manquant')}
+                    >
+                      Manquant
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  Emplacement: {materiel.emplacement}
-                </div>
-              </div>
-              <div className="status-icons">
-                <span
-                  className={`status-icon ok ${materielStatuses[materiel.id] === 'ok' ? 'active' : ''}`}
-                  onClick={() => handleStatusChange(materiel.id, 'ok')}
-                >
-                  OK
-                </span>
-                <span
-                  className={`status-icon anomalie ${materielStatuses[materiel.id] === 'anomalie' ? 'active' : ''}`}
-                  onClick={() => handleStatusChange(materiel.id, 'anomalie')}
-                >
-                  Anomalie
-                </span>
-                <span
-                  className={`status-icon manquant ${materielStatuses[materiel.id] === 'manquant' ? 'active' : ''}`}
-                  onClick={() => handleStatusChange(materiel.id, 'manquant')}
-                >
-                  Manquant
-                </span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <p>No materials found for this vehicle.</p>
-      )}
-      <button className="validate-button" onClick={handleValidate}>VALIDER</button>
-    </div>
-  );
-}
+          ) : (
+            <p>No materials found for this vehicle.</p>
+          )}
+          <button className="validate-button" onClick={handleValidate}>VALIDER</button>
 
-export default Verification;
+          {selectedMaterielId && !commentPopupVisible && (
+            <CommentPopup
+              materielId={selectedMaterielId}
+              onCommentSubmit={handleCommentSubmit}
+              onClose={() => setSelectedMaterielId(null)}
+            />
+          )}
+
+          {commentPopupVisible && (
+            <CommentDisplayPopup
+              materielId={selectedMaterielId}
+              comment={comments[selectedMaterielId]}
+              onClose={closeCommentPopup}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function CommentPopup({ materielId, onCommentSubmit, onClose }) {
+      const [commentText, setCommentText] = useState('');
+
+      const handleSubmit = () => {
+        onCommentSubmit(materielId, commentText);
+        onClose();
+      };
+
+      return (
+        <div className="comment-popup">
+          <div className="comment-popup-content">
+            <h3>Add Comment</h3>
+            <textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Enter comment..."
+            />
+            <div className="comment-popup-buttons">
+              <button onClick={handleSubmit}>Valider</button>
+              <button onClick={onClose}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function CommentDisplayPopup({ materielId, comment, onClose }) {
+      const lines = comment ? comment.split('\n') : [];
+      const timestampSignature = lines.length > 0 ? lines[0] : '';
+      const commentText = lines.length > 1 ? lines[1] : '';
+
+      return (
+        <div className="comment-popup">
+          <div className="comment-popup-content">
+            <h3>Comment</h3>
+            <p style={{ textAlign: 'center' }}>
+              {timestampSignature}
+            </p>
+            <p style={{ textAlign: 'center', fontWeight: 'bold', whiteSpace: 'pre-line' }}>
+              {commentText}
+            </p>
+            <div className="comment-popup-buttons">
+              <button onClick={onClose}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    export default Verification;

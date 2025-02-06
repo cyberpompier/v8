@@ -2,6 +2,11 @@
 .home {
   text-align: center; /* Centre le texte */
   padding: 20px;
+  background-image: url('./firefighter-truck.jpg'); /* Définit l'image de fond */
+  background-size: cover; /* Couvre toute la zone */
+  background-position: center; /* Centre l'image */
+  height: 100vh; /* Prend toute la hauteur de la fenêtre */
+  color: white; /* Change la couleur du texte pour le rendre lisible */
 }
 
 .home h2 {
@@ -10,6 +15,5 @@
 
 .home p {
   margin: 0; /* Supprime la marge pour un meilleur centrage */
-	text-align: center;
 }
 ```

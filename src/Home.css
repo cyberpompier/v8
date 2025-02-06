@@ -10,5 +10,6 @@
 
 .home p {
   margin: 0; /* Supprime la marge pour un meilleur centrage */
+	text-align: center;
 }
 ```

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
     import './Parametres.css';
     import { initializeApp } from 'firebase/app';
-    import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+    import { getFirestore, collection, addDoc, getDocs, doc, getDoc } from 'firebase/firestore';
     import firebaseConfig from './firebaseConfig';
 
     // Initialize Firebase

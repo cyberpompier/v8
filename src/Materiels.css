@@ -1,7 +1,6 @@
 .materiels {
       text-align: center;
       padding: 20px;
-			width: 100%;
     }
 
     .materiels-container {
@@ -15,7 +14,6 @@
       align-items: center;
       margin-bottom: 10px;
       position: relative; /* Make this relative for absolute positioning of the badge */
-			width: 100%;
     }
 
     .comment-popup {

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
     import { useParams, useNavigate } from 'react-router-dom';
     import { initializeApp } from 'firebase/app';
     import { getFirestore, collection, getDocs, query, where, doc, updateDoc, getDoc } from 'firebase/firestore';
+    import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import auth functions
     import firebaseConfig from './firebaseConfig';
     import './Verification.css';
-
+    
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
+    
     function Verification() {
       const { vehicleId } = useParams();
       const [materiels, setMateriels] = useState([]);
@@ -18,13 +19,40 @@ import React, { useState, useEffect } from 'react';
       const [commentPopupVisible, setCommentPopupVisible] = useState(false);
       const navigate = useNavigate();
       const [vehicleAffection, setVehicleAffection] = useState('');
-
+      const [userProfile, setUserProfile] = useState(null); // User profile state
+      const [user, setUser] = useState(null); // Current user state
+    
+      const auth = getAuth(app); // Get Firebase auth instance
+    
+      useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          setUser(user); // Set the user when auth state changes
+    
+          if (user) {
+            // Fetch user profile from 'users' collection
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+    
+            if (userSnap.exists()) {
+              setUserProfile(userSnap.data());
+            } else {
+              console.log('No such document!');
+              setUserProfile(null);
+            }
+          } else {
+            setUserProfile(null);
+          }
+        });
+    
+        return () => unsubscribe(); // Cleanup subscription on unmount
+      }, [auth]);
+    
       useEffect(() => {
         const fetchVehicleAffection = async () => {
           try {
             const vehicleRef = doc(db, "vehicles", vehicleId);
             const vehicleSnap = await getDoc(vehicleRef);
-
+    
             if (vehicleSnap.exists()) {
               setVehicleAffection(vehicleSnap.data().denomination);
             } else {
@@ -34,10 +62,10 @@ import React, { useState, useEffect } from 'react';
             console.error("Error fetching vehicle affection:", error);
           }
         };
-
+    
         fetchVehicleAffection();
       }, [vehicleId]);
-
+    
       useEffect(() => {
         const fetchMateriels = async () => {
           try {
@@ -50,14 +78,14 @@ import React, { useState, useEffect } from 'react';
                 ...doc.data()
               }));
               setMateriels(fetchedMateriels);
-
+    
               // Initialize statuses for each material
               const initialStatuses = {};
               fetchedMateriels.forEach(materiel => {
                 initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
               });
               setMaterielStatuses(initialStatuses);
-
+    
               // Initialize comments for each material
               const initialComments = {};
               fetchedMateriels.forEach(materiel => {
@@ -69,25 +97,25 @@ import React, { useState, useEffect } from 'react';
             console.error("Error fetching materials:", error);
           }
         };
-
+    
         fetchMateriels();
       }, [vehicleId, vehicleAffection]);
-
+    
       const handleStatusChange = async (materielId, status) => {
         try {
           const materielRef = doc(db, "materials", materielId);
           await updateDoc(materielRef, { status: status }); // Update status in Firestore
-					// Si le statut est "ok", efface les commentaires
-      if (status === 'ok') {
-        await updateDoc(materielRef, { status: status, comment: '' }); // Update status and clear comment in Firestore
-        setComments(prevComments => {
-          const newComments = { ...prevComments };
-          delete newComments[materielId];
-          return newComments;
-        });
-      } else {
-        await updateDoc(materielRef, { status: status }); // Update status in Firestore
-      }
+          // Si le statut est "ok", efface les commentaires
+          if (status === 'ok') {
+            await updateDoc(materielRef, { status: status, comment: '' }); // Update status and clear comment in Firestore
+            setComments(prevComments => {
+              const newComments = { ...prevComments };
+              delete newComments[materielId];
+              return newComments;
+            });
+          } else {
+            await updateDoc(materielRef, { status: status }); // Update status in Firestore
+          }
           setMaterielStatuses(prevStatuses => ({
             ...prevStatuses,
             [materielId]: status
@@ -95,39 +123,41 @@ import React, { useState, useEffect } from 'react';
         } catch (error) {
           console.error("Error updating status in Firestore:", error);
         }
-
+    
         if (status === 'anomalie' || status === 'manquant') {
           setSelectedMaterielId(materielId);
         }
       };
-
+    
       const handleCommentSubmit = async (materielId, commentText) => {
         const timestamp = new Date().toLocaleString();
-        const signature = "User"; // Replace with actual user signature logic
+        // Assuming you have a way to store and retrieve the user's grade
+        const grade = userProfile && userProfile.grade ? userProfile.grade : "Pompier"; // Default grade
+        const signature = user ? `${grade} ${user.displayName || user.email}` : "Unknown User"; // Use display name or email
         const comment = `${timestamp} - ${signature}\n${commentText}`;
-
+    
         setComments(prevComments => ({
           ...prevComments,
           [materielId]: comment
         }));
-
+    
         const newStatus = materielStatuses[materielId] === 'manquant' ? 'manquant' : 'anomalie';
-
+    
         try {
           const materielRef = doc(db, "materials", materielId);
           await updateDoc(materielRef, { comment: comment, status: newStatus }); // Update comment and status in Firestore
         } catch (error) {
           console.error("Error updating comment in Firestore:", error);
         }
-
+    
         setMaterielStatuses(prevStatuses => ({
           ...prevStatuses,
           [materielId]: newStatus
         }));
-
+    
         setSelectedMaterielId(null); // Close the popup
       };
-
+    
       const handleValidate = async () => {
         try {
           // Update the 'status' field in Firestore for each material
@@ -135,13 +165,13 @@ import React, { useState, useEffect } from 'react';
             const materielRef = doc(db, "materials", materielId);
             await updateDoc(materielRef, { status: materielStatuses[materielId] });
           }
-
+    
           navigate('/labels');
         } catch (error) {
           console.error("Error updating materials:", error);
         }
       };
-
+    
       const getMaterielStyle = (materielId) => {
         if (materielStatuses[materielId] === 'anomalie') {
           return { backgroundColor: 'orange' };
@@ -151,17 +181,17 @@ import React, { useState, useEffect } from 'react';
         }
         return {};
       };
-
+    
       const showCommentPopup = (materielId) => {
         setSelectedMaterielId(materielId);
         setCommentPopupVisible(true);
       };
-
+    
       const closeCommentPopup = () => {
         setCommentPopupVisible(false);
         setSelectedMaterielId(null);
       };
-
+    
       return (
         <div className="verification">
           <h2>Verification</h2>
@@ -231,7 +261,7 @@ import React, { useState, useEffect } from 'react';
             <p>No materials found for this vehicle.</p>
           )}
           <button className="validate-button" onClick={handleValidate}>VALIDER</button>
-
+    
           {selectedMaterielId && !commentPopupVisible && (
             <CommentPopup
               materielId={selectedMaterielId}
@@ -239,7 +269,7 @@ import React, { useState, useEffect } from 'react';
               onClose={() => setSelectedMaterielId(null)}
             />
           )}
-
+    
           {commentPopupVisible && (
             <CommentDisplayPopup
               materielId={selectedMaterielId}
@@ -250,15 +280,15 @@ import React, { useState, useEffect } from 'react';
         </div>
       );
     }
-
+    
     function CommentPopup({ materielId, onCommentSubmit, onClose }) {
       const [commentText, setCommentText] = useState('');
-
+    
       const handleSubmit = () => {
         onCommentSubmit(materielId, commentText);
         onClose();
       };
-
+    
       return (
         <div className="comment-popup">
           <div className="comment-popup-content">
@@ -276,12 +306,12 @@ import React, { useState, useEffect } from 'react';
         </div>
       );
     }
-
+    
     function CommentDisplayPopup({ materielId, comment, onClose }) {
       const lines = comment ? comment.split('\n') : [];
       const timestampSignature = lines.length > 0 ? lines[0] : '';
       const commentText = lines.length > 1 ? lines[1] : '';
-
+    
       return (
         <div className="comment-popup">
           <div className="comment-popup-content">
@@ -299,5 +329,5 @@ import React, { useState, useEffect } from 'react';
         </div>
       );
     }
-
+    
     export default Verification;

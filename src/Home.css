@@ -1,19 +1,51 @@
-```css
 .home {
-  text-align: center; /* Centre le texte */
-  padding: 20px;
-  background-image: url('/public/firefighter-truck.jpg'); /* Définit l'image de fond depuis le dossier public */
-  background-size: cover; /* Couvre toute la zone */
-  background-position: center; /* Centre l'image */
-  height: 100vh; /* Prend toute la hauteur de la fenêtre */
-  color: white; /* Change la couleur du texte pour le rendre lisible */
-}
-
-.home h2 {
-  margin: 0; /* Supprime la marge pour un meilleur centrage */
-}
-
-.home p {
-  margin: 0; /* Supprime la marge pour un meilleur centrage */
-}
-```
+      text-align: center;
+      padding: 20px;
+      background-image: url('/public/firefighter-truck.jpg');
+      background-size: cover;
+      background-position: center;
+      height: 100vh;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center; /* Centre verticalement */
+      align-items: center; /* Centre horizontalement */
+    }
+    
+    .home h2 {
+      margin: 0;
+    }
+    
+    .home p {
+      margin: 0 0 20px 0; /* Ajoute un peu d'espace en bas du paragraphe */
+    }
+    
+    .buttons-container {
+      display: flex;
+      gap: 20px; /* Espacement entre les boutons */
+    }
+    
+    .login-button,
+    .register-button,
+    .logout-button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    
+    .login-button {
+      background-color: #4CAF50; /* Vert */
+      color: white;
+    }
+    
+    .register-button {
+      background-color: #008CBA; /* Bleu */
+      color: white;
+    }
+    
+    .logout-button {
+      background-color: #f44336; /* Red */
+      color: white;
+    }

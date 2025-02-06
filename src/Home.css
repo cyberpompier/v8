@@ -2,7 +2,7 @@
 .home {
   text-align: center; /* Centre le texte */
   padding: 20px;
-  background-image: url('public/firefighter-truck.jpg'); /* Définit l'image de fond depuis le dossier public */
+  background-image: url('/public/firefighter-truck.jpg'); /* Définit l'image de fond depuis le dossier public */
   background-size: cover; /* Couvre toute la zone */
   background-position: center; /* Centre l'image */
   height: 100vh; /* Prend toute la hauteur de la fenêtre */

@@ -1,4 +1,14 @@
+```css
 .home {
-  text-align: center;
+  text-align: center; /* Centre le texte */
   padding: 20px;
 }
+
+.home h2 {
+  margin: 0; /* Supprime la marge pour un meilleur centrage */
+}
+
+.home p {
+  margin: 0; /* Supprime la marge pour un meilleur centrage */
+}
+```

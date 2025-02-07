@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    function Verification({ user }) {
+    function Verification({ user, setVehicleDenomination }) {
       const { vehicleId } = useParams();
       const [materiels, setMateriels] = useState([]);
       const [materielStatuses, setMaterielStatuses] = useState({}); // 'ok', 'anomalie', 'manquant'
@@ -20,27 +20,30 @@ import React, { useState, useEffect } from 'react';
       const navigate = useNavigate();
       const [vehicleAffection, setVehicleAffection] = useState('');
       const [userProfile, setUserProfile] = useState(null); // User profile state
+      const [emplacementFilter, setEmplacementFilter] = useState(''); // État pour le filtre d'emplacement
     
       const auth = getAuth(app); // Get Firebase auth instance
     
       useEffect(() => {
-        const fetchVehicleAffection = async () => {
+        const fetchVehicleData = async () => {
           try {
             const vehicleRef = doc(db, "vehicles", vehicleId);
             const vehicleSnap = await getDoc(vehicleRef);
     
             if (vehicleSnap.exists()) {
-              setVehicleAffection(vehicleSnap.data().denomination);
+              const vehicleData = vehicleSnap.data();
+              setVehicleAffection(vehicleData.denomination);
+              setVehicleDenomination(vehicleData.denomination);
             } else {
               console.log("No such document!");
             }
           } catch (error) {
-            console.error("Error fetching vehicle affection:", error);
+            console.error("Error fetching vehicle data:", error);
           }
         };
     
-        fetchVehicleAffection();
-      }, [vehicleId]);
+        fetchVehicleData();
+      }, [vehicleId, setVehicleDenomination]);
     
       useEffect(() => {
         const fetchMateriels = async () => {
@@ -54,20 +57,6 @@ import React, { useState, useEffect } from 'react';
                 ...doc.data()
               }));
               setMateriels(fetchedMateriels);
-    
-              // Initialize statuses for each material
-              const initialStatuses = {};
-              fetchedMateriels.forEach(materiel => {
-                initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
-              });
-              setMaterielStatuses(initialStatuses);
-    
-              // Initialize comments for each material
-              const initialComments = {};
-              fetchedMateriels.forEach(materiel => {
-                initialComments[materiel.id] = materiel.comment || ''; // Initialize with comment from db
-              });
-              setComments(initialComments);
             }
           } catch (error) {
             console.error("Error fetching materials:", error);
@@ -192,12 +181,35 @@ import React, { useState, useEffect } from 'react';
         setSelectedMaterielId(null);
       };
     
+      const handleEmplacementFilterChange = (e) => {
+        setEmplacementFilter(e.target.value);
+      };
+    
+      const filteredMateriels = emplacementFilter === ''
+        ? materiels
+        : materiels.filter(materiel => materiel.emplacement === emplacementFilter);
+    
       return (
         <div className="verification">
-          <h2>Verification</h2>
-          {materiels.length > 0 ? (
+          <div className="filter-container">
+            <label className="filter-label" htmlFor="emplacementFilter">Filtrer par emplacement:</label>
+            <select
+              id="emplacementFilter"
+              className="filter-select"
+              value={emplacementFilter}
+              onChange={handleEmplacementFilterChange}
+            >
+              <option value="">Tous les emplacements</option>
+              {materiels && [...new Set(materiels.map(materiel => materiel.emplacement))].map(emplacement => (
+                <option key={emplacement} value={emplacement}>
+                  {emplacement}
+                </option>
+              ))}
+            </select>
+          </div>
+          {filteredMateriels.length > 0 ? (
             <div className="materiels-container">
-              {materiels.map(materiel => (
+              {filteredMateriels.map(materiel => (
                 <div
                   key={materiel.id}
                   className="materiel-container"
@@ -218,14 +230,6 @@ import React, { useState, useEffect } from 'react';
                   <div className="materiel-details">
                     <div className="materiel-title">
                       {materiel.denomination}
-                      {comments[materiel.id] && (
-                        <span
-                          style={{ marginLeft: '5px', color: 'blue', cursor: 'pointer' }}
-                          onClick={() => showCommentPopup(materiel.id)}
-                        >
-                          ⓘ
-                        </span>
-                      )}
                     </div>
                     <div>
                       Quantité: {materiel.quantity}
@@ -234,6 +238,14 @@ import React, { useState, useEffect } from 'react';
                       Emplacement: {materiel.emplacement}
                     </div>
                   </div>
+                  {comments[materiel.id] && (
+                    <span
+                      className="comment-badge"
+                      onClick={() => showCommentPopup(materiel.id)}
+                    >
+                      ⓘ
+                    </span>
+                  )}
                   <div className="status-icons">
                     <span
                       className={`status-icon ok ${materielStatuses[materiel.id] === 'ok' ? 'active' : ''}`}
@@ -270,10 +282,11 @@ import React, { useState, useEffect } from 'react';
             />
           )}
     
-          {commentPopupVisible && (
+          {commentPopupVisible && userProfile && (
             <CommentDisplayPopup
               materielId={selectedMaterielId}
               comment={comments[selectedMaterielId]}
+              userPhoto={userProfile.photoURL} // Assuming userProfile has a photoURL
               onClose={closeCommentPopup}
             />
           )}
@@ -307,7 +320,7 @@ import React, { useState, useEffect } from 'react';
       );
     }
     
-    function CommentDisplayPopup({ materielId, comment, onClose }) {
+    function CommentDisplayPopup({ materielId, comment, userPhoto, onClose }) {
       const lines = comment ? comment.split('\n') : [];
       const timestampSignature = lines.length > 0 ? lines[0] : '';
       const commentText = lines.length > 1 ? lines[1] : '';
@@ -315,7 +328,10 @@ import React, { useState, useEffect } from 'react';
       return (
         <div className="comment-popup">
           <div className="comment-popup-content">
-            <h3>Comment</h3>
+            <h3>Commentaire</h3>
+            <div className="user-photo-bubble">
+              <img src={userPhoto} alt="User Photo" />
+            </div>
             <p style={{ textAlign: 'center' }}>
               {timestampSignature}
             </p>

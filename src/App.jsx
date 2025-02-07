@@ -20,6 +20,7 @@ import React, { useState, useEffect } from 'react';
     function App() {
       const [user, setUser] = useState(null);
       const auth = getAuth(app);
+      const [vehicleDenomination, setVehicleDenomination] = useState('');
     
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -29,11 +30,23 @@ import React, { useState, useEffect } from 'react';
         return () => unsubscribe();
       }, [auth]);
     
+      // Function to dynamically set the header title based on the route
+      const getHeaderTitle = () => {
+        const path = window.location.pathname;
+        if (path.startsWith('/verification/')) {
+          // Extract vehicleId from the path
+          const vehicleId = path.split('/')[2];
+          return `Vérification - ${vehicleDenomination}`;
+        } else {
+          return 'Gestion des Véhicules';
+        }
+      };
+    
       return (
         <Router>
           <div className="app">
             <header className="app-header">
-              <h1>Gestion des Véhicules</h1>
+              <h1>{getHeaderTitle()}</h1>
             </header>
     
             <Routes>
@@ -45,7 +58,7 @@ import React, { useState, useEffect } from 'react';
               <Route path="/login" element={<Login />} />
               {/* Page d'enregistrement accessible */}
               <Route path="/register" element={<Register />} />
-              <Route path="/verification/:vehicleId" element={<Verification user={user} />} />
+              <Route path="/verification/:vehicleId" element={<Verification user={user} setVehicleDenomination={setVehicleDenomination} />} />
             </Routes>
     
             <footer className="app-footer">

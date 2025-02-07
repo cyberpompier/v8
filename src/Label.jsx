@@ -8,33 +8,34 @@ import React, { useState, useEffect } from 'react';
     const db = getFirestore(app);
 
     function Label({ label, onIconClick, onVerifyClick, user }) {
-      const [anomalieCount, setAnomalieCount] = useState(0);
-      const [manquantCount, setManquantCount] = useState(0);
+      const [anomalies, setAnomalies] = useState([]);
+      const [manquants, setManquants] = useState([]);
       const [verificationInfo, setVerificationInfo] = useState(null);
+      const [showPopup, setShowPopup] = useState(false);
 
       useEffect(() => {
-        const fetchCounts = async () => {
+        const fetchMateriels = async () => {
           try {
             const materielsRef = collection(db, "materials");
             const q = query(materielsRef, where("affection", "==", label.denomination));
-
             const querySnapshot = await getDocs(q);
-            let anomalie = 0;
-            let manquant = 0;
+
+            const fetchedAnomalies = [];
+            const fetchedManquants = [];
 
             querySnapshot.forEach((doc) => {
               const materiel = doc.data();
               if (materiel.status === 'anomalie') {
-                anomalie++;
+                fetchedAnomalies.push(materiel);
               } else if (materiel.status === 'manquant') {
-                manquant++;
+                fetchedManquants.push(materiel);
               }
             });
 
-            setAnomalieCount(anomalie);
-            setManquantCount(manquant);
+            setAnomalies(fetchedAnomalies);
+            setManquants(fetchedManquants);
           } catch (error) {
-            console.error("Error fetching counts:", error);
+            console.error("Error fetching materials:", error);
           }
         };
 
@@ -53,9 +54,20 @@ import React, { useState, useEffect } from 'react';
           }
         };
 
-        fetchCounts();
+        fetchMateriels();
         fetchVerificationInfo();
       }, [label.denomination, label.id]);
+
+      const shouldShowIcon = anomalies.length > 0 || manquants.length > 0;
+
+      const handleInfoClick = (e) => {
+        e.stopPropagation();
+        setShowPopup(true);
+      };
+
+      const handleClosePopup = () => {
+        setShowPopup(false);
+      };
 
       return (
         <div className="label-container">
@@ -72,23 +84,30 @@ import React, { useState, useEffect } from 'react';
             )}
           </div>
           <div className="label-details">
-            <div className="label-title">{label.denomination}</div>
+            <div className="label-title">
+              {label.denomination}
+              {shouldShowIcon && (
+                <span className="label-info-icon" onClick={handleInfoClick}>
+                  ⓘ
+                </span>
+              )}
+            </div>
             <div className="label-verification">
-              {anomalieCount === 0 && manquantCount === 0 ? (
+              {anomalies.length === 0 && manquants.length === 0 ? (
                 <>
                   Status: {label.status}
                   <br />
                 </>
               ) : null}
-              {anomalieCount > 0 && (
+              {anomalies.length > 0 && (
                 <>
-                  Anomalies: {anomalieCount}
+                  Anomalies: {anomalies.length}
                   <br />
                 </>
               )}
-              {manquantCount > 0 && (
+              {manquants.length > 0 && (
                 <>
-                  Manquants: {manquantCount}
+                  Manquants: {manquants.length}
                   <br />
                 </>
               )}
@@ -103,6 +122,76 @@ import React, { useState, useEffect } from 'react';
             </div>
           </div>
           {user ? <button className="label-button" onClick={onVerifyClick}>Vérifier</button> : null}
+          {showPopup && (
+            <AnomaliePopup
+              label={label}
+              anomalies={anomalies}
+              manquants={manquants}
+              onClose={handleClosePopup}
+            />
+          )}
+        </div>
+      );
+    }
+
+    function AnomaliePopup({ label, anomalies, manquants, onClose }) {
+      return (
+        <div className="anomalie-popup">
+          <div className="anomalie-popup-content">
+            <h3>{label.denomination} - Commentaires et Matériel</h3>
+            {anomalies.length > 0 && (
+              <div>
+                <h4>Anomalies:</h4>
+                <ul>
+                  {anomalies.map((materiel) => {
+                    const commentParts = materiel.comment ? materiel.comment.split('\n') : [];
+                    const timestampSignature = commentParts.length > 0 ? commentParts[0] : '';
+                    const commentText = commentParts.length > 1 ? commentParts[1] : '';
+
+                    return (
+                      <li key={materiel.id}>
+                        <b>{materiel.denomination}:</b>
+                        {materiel.comment && (
+                          <>
+                            <p>{timestampSignature}</p>
+                            <p><b>{commentText}</b></p>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {manquants.length > 0 && (
+              <div>
+                <h4>Manquants:</h4>
+                <ul>
+                  {manquants.map((materiel) => {
+                    const commentParts = materiel.comment ? materiel.comment.split('\n') : [];
+                    const timestampSignature = commentParts.length > 0 ? commentParts[0] : '';
+                    const commentText = commentParts.length > 1 ? commentParts[1] : '';
+
+                    return (
+                      <li key={materiel.id}>
+                        <b>{materiel.denomination}:</b>
+                        {materiel.comment && (
+                          <>
+                            <p>{timestampSignature}</p>
+                            <p><b>{commentText}</b></p>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            {anomalies.length === 0 && manquants.length === 0 && (
+              <p>Aucun commentaire.</p>
+            )}
+            <button onClick={onClose}>Fermer</button>
+          </div>
         </div>
       );
     }

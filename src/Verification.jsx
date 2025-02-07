@@ -108,8 +108,6 @@ import React, { useState, useEffect } from 'react';
       const handleStatusChange = async (materielId, status) => {
         try {
           const materielRef = doc(db, "materials", materielId);
-          await updateDoc(materielRef, { status: status }); // Update status in Firestore
-          // Si le statut est "ok", efface les commentaires
           if (status === 'ok') {
             await updateDoc(materielRef, { status: status, comment: '' }); // Update status and clear comment in Firestore
             setComments(prevComments => {
@@ -117,8 +115,18 @@ import React, { useState, useEffect } from 'react';
               delete newComments[materielId];
               return newComments;
             });
+            setMaterielStatuses(prevStatuses => {
+              const newStatuses = { ...prevStatuses };
+              newStatuses[materielId] = status;
+              return newStatuses;
+            });
           } else {
             await updateDoc(materielRef, { status: status }); // Update status in Firestore
+            setMaterielStatuses(prevStatuses => {
+              const newStatuses = { ...prevStatuses };
+              newStatuses[materielId] = status;
+              return newStatuses;
+            });
           }
           // After updating Firestore, fetch the updated materials to reflect changes
           fetchMateriels();

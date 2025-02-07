@@ -416,7 +416,12 @@ import React, { useState, useEffect } from 'react';
                   {anomalies.map(materiel => (
                     <li key={materiel.id}>
                       {materiel.denomination}
-                      {comments[materiel.id] && <p>Commentaire: {comments[materiel.id]}</p>}
+                      {comments[materiel.id] && (
+                        <>
+                          <br />
+                          <b>{comments[materiel.id]}</b>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -429,7 +434,12 @@ import React, { useState, useEffect } from 'react';
                   {manquants.map(materiel => (
                     <li key={materiel.id}>
                       {materiel.denomination}
-                      {comments[materiel.id] && <p>Commentaire: {comments[materiel.id]}</p>}
+                      {comments[materiel.id] && (
+                        <>
+                          <br />
+                          <b>{comments[materiel.id]}</b>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>

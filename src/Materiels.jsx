@@ -16,6 +16,10 @@ import React, { useState, useEffect } from 'react';
       const [commentPopupVisible, setCommentPopupVisible] = useState(false);
       const [selectedMaterielComment, setSelectedMaterielComment] = useState(null);
       const [blinking, setBlinking] = useState(true);
+      const [emplacementFilter, setEmplacementFilter] = useState('');
+      const [vehicleFilter, setVehicleFilter] = useState('');
+      const [vehicles, setVehicles] = useState([]);
+      const [emplacementOptions, setEmplacementOptions] = useState([]);
 
       useEffect(() => {
         const fetchMateriels = async () => {
@@ -40,7 +44,21 @@ import React, { useState, useEffect } from 'react';
           }
         };
 
+        const fetchVehicles = async () => {
+          try {
+            const querySnapshot = await getDocs(collection(db, "vehicles"));
+            const fetchedVehicles = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              denomination: doc.data().denomination,
+            }));
+            setVehicles(fetchedVehicles);
+          } catch (error) {
+            console.error("Error fetching vehicles:", error);
+          }
+        };
+
         fetchMateriels();
+        fetchVehicles();
       }, []);
 
       useEffect(() => {
@@ -50,6 +68,21 @@ import React, { useState, useEffect } from 'react';
 
         return () => clearInterval(intervalId); // Clean up interval on unmount
       }, []);
+
+      useEffect(() => {
+        // Update emplacement options based on selected vehicle
+        if (vehicleFilter) {
+          const filteredMateriels = materiels.filter(materiel => materiel.affection === vehicleFilter);
+          const uniqueEmplacements = [...new Set(filteredMateriels.map(materiel => materiel.emplacement))];
+          setEmplacementOptions(uniqueEmplacements);
+        } else {
+          // If no vehicle is selected, show all unique locations
+          const uniqueEmplacements = [...new Set(materiels.map(materiel => materiel.emplacement))];
+          setEmplacementOptions(uniqueEmplacements);
+        }
+        // Reset emplacement filter when vehicle filter changes
+        setEmplacementFilter('');
+      }, [vehicleFilter, materiels]);
 
       const handleIconClick = (materiel) => {
         setSelectedMateriel(materiel);
@@ -69,11 +102,58 @@ import React, { useState, useEffect } from 'react';
         setSelectedMaterielComment(null);
       };
 
+      const handleEmplacementFilterChange = (e) => {
+        setEmplacementFilter(e.target.value);
+      };
+
+      const handleVehicleFilterChange = (e) => {
+        setVehicleFilter(e.target.value);
+      };
+
+      const filteredMateriels = materiels
+        ? materiels.filter(materiel =>
+          (vehicleFilter === '' || materiel.affection === vehicleFilter) &&
+          (emplacementFilter === '' || materiel.emplacement === emplacementFilter)
+        )
+        : [];
+
       return (
         <div className="materiels">
           <h2>Page Matériels</h2>
+          <div className="filter-container">
+            <label className="filter-label" htmlFor="vehicleFilter">Filtrer par véhicule:</label>
+            <select
+              id="vehicleFilter"
+              className="filter-select"
+              value={vehicleFilter}
+              onChange={handleVehicleFilterChange}
+            >
+              <option value="">Tous les véhicules</option>
+              {vehicles && vehicles.map(vehicle => (
+                <option key={vehicle.id} value={vehicle.denomination}>
+                  {vehicle.denomination}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="filter-container">
+            <label className="filter-label" htmlFor="emplacementFilter">Filtrer par emplacement:</label>
+            <select
+              id="emplacementFilter"
+              className="filter-select"
+              value={emplacementFilter}
+              onChange={handleEmplacementFilterChange}
+            >
+              <option value="">Tous les emplacements</option>
+              {emplacementOptions && emplacementOptions.map(emplacement => (
+                <option key={emplacement} value={emplacement}>
+                  {emplacement}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="materiels-container">
-            {materiels.map((materiel) => (
+            {filteredMateriels.map((materiel) => (
               <div key={materiel.id} className="materiel-item">
                 <Materiel
                   materiel={materiel}

@@ -48,3 +48,23 @@
         opacity: 0;
       }
     }
+
+    .filter-container {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .filter-label {
+      font-size: 1em;
+      margin-right: 10px;
+      color: #555;
+    }
+
+    .filter-select {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      width: 200px;
+    }

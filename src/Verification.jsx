@@ -57,6 +57,20 @@ import React, { useState, useEffect } from 'react';
                 ...doc.data()
               }));
               setMateriels(fetchedMateriels);
+    
+              // Initialize statuses for each material
+              const initialStatuses = {};
+              fetchedMateriels.forEach(materiel => {
+                initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
+              });
+              setMaterielStatuses(initialStatuses);
+    
+              // Initialize comments for each material
+              const initialComments = {};
+              fetchedMateriels.forEach(materiel => {
+                initialComments[materiel.id] = materiel.comment || ''; // Initialize with comment from db
+              });
+              setComments(initialComments);
             }
           } catch (error) {
             console.error("Error fetching materials:", error);
@@ -105,10 +119,8 @@ import React, { useState, useEffect } from 'react';
           } else {
             await updateDoc(materielRef, { status: status }); // Update status in Firestore
           }
-          setMaterielStatuses(prevStatuses => ({
-            ...prevStatuses,
-            [materielId]: status
-          }));
+          // After updating Firestore, fetch the updated materials to reflect changes
+          fetchMateriels();
         } catch (error) {
           console.error("Error updating status in Firestore:", error);
         }

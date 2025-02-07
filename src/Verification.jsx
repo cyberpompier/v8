@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
     import { useParams, useNavigate } from 'react-router-dom';
     import { initializeApp } from 'firebase/app';
-    import { getFirestore, collection, getDocs, query, where, doc, updateDoc, getDoc } from 'firebase/firestore';
+    import { getFirestore, collection, getDocs, query, where, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
     import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import auth functions
     import firebaseConfig from './firebaseConfig';
     import './Verification.css';
-    
+
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
+
     function Verification({ user, setVehicleDenomination }) {
       const { vehicleId } = useParams();
       const [materiels, setMateriels] = useState([]);
@@ -21,15 +21,16 @@ import React, { useState, useEffect } from 'react';
       const [vehicleAffection, setVehicleAffection] = useState('');
       const [userProfile, setUserProfile] = useState(null); // User profile state
       const [emplacementFilter, setEmplacementFilter] = useState(''); // État pour le filtre d'emplacement
-    
+      const [validationPopupVisible, setValidationPopupVisible] = useState(false);
+
       const auth = getAuth(app); // Get Firebase auth instance
-    
+
       useEffect(() => {
         const fetchVehicleData = async () => {
           try {
             const vehicleRef = doc(db, "vehicles", vehicleId);
             const vehicleSnap = await getDoc(vehicleRef);
-    
+
             if (vehicleSnap.exists()) {
               const vehicleData = vehicleSnap.data();
               setVehicleAffection(vehicleData.denomination);
@@ -41,10 +42,10 @@ import React, { useState, useEffect } from 'react';
             console.error("Error fetching vehicle data:", error);
           }
         };
-    
+
         fetchVehicleData();
       }, [vehicleId, setVehicleDenomination]);
-    
+
       useEffect(() => {
         const fetchMateriels = async () => {
           try {
@@ -57,14 +58,14 @@ import React, { useState, useEffect } from 'react';
                 ...doc.data()
               }));
               setMateriels(fetchedMateriels);
-    
+
               // Initialize statuses for each material
               const initialStatuses = {};
               fetchedMateriels.forEach(materiel => {
                 initialStatuses[materiel.id] = materiel.status || 'ok'; // Default to 'ok'
               });
               setMaterielStatuses(initialStatuses);
-    
+
               // Initialize comments for each material
               const initialComments = {};
               fetchedMateriels.forEach(materiel => {
@@ -76,10 +77,10 @@ import React, { useState, useEffect } from 'react';
             console.error("Error fetching materials:", error);
           }
         };
-    
+
         fetchMateriels();
       }, [vehicleId, vehicleAffection]);
-    
+
       useEffect(() => {
         if (user) {
           // Fetch user profile from 'users' collection
@@ -103,7 +104,7 @@ import React, { useState, useEffect } from 'react';
           setUserProfile(null);
         }
       }, [user]);
-    
+
       const handleStatusChange = async (materielId, status) => {
         try {
           const materielRef = doc(db, "materials", materielId);
@@ -124,55 +125,79 @@ import React, { useState, useEffect } from 'react';
         } catch (error) {
           console.error("Error updating status in Firestore:", error);
         }
-    
+
         if (status === 'anomalie' || status === 'manquant') {
           setSelectedMaterielId(materielId);
         }
       };
-    
+
       const handleCommentSubmit = async (materielId, commentText) => {
         const timestamp = new Date().toLocaleString();
         // Assuming you have a way to store and retrieve the user's grade
         const grade = userProfile && userProfile.grade ? userProfile.grade : "Pompier"; // Default grade
         const signature = user ? `${grade} ${user.displayName || user.email}` : "Unknown User"; // Use display name or email
         const comment = `${timestamp} - ${signature}\n${commentText}`;
-    
+
         setComments(prevComments => ({
           ...prevComments,
           [materielId]: comment
         }));
-    
+
         const newStatus = materielStatuses[materielId] === 'manquant' ? 'manquant' : 'anomalie';
-    
+
         try {
           const materielRef = doc(db, "materials", materielId);
           await updateDoc(materielRef, { comment: comment, status: newStatus }); // Update comment and status in Firestore
         } catch (error) {
           console.error("Error updating comment in Firestore:", error);
         }
-    
+
         setMaterielStatuses(prevStatuses => ({
           ...prevStatuses,
           [materielId]: newStatus
         }));
-    
+
         setSelectedMaterielId(null); // Close the popup
       };
-    
-      const handleValidate = async () => {
+
+      const handleValidateClick = () => {
+        // Open the validation popup
+        setValidationPopupVisible(true);
+      };
+
+      const handleValidationConfirm = async () => {
         try {
           // Update the 'status' field in Firestore for each material
           for (const materielId in materielStatuses) {
             const materielRef = doc(db, "materials", materielId);
             await updateDoc(materielRef, { status: materielStatuses[materielId] });
           }
-    
+
+          // Record validation timestamp, grade, and user name
+          const timestamp = new Date().toLocaleString();
+          const grade = userProfile && userProfile.grade ? userProfile.grade : "Pompier";
+          const signature = user ? `${grade} ${user.displayName || user.email}` : "Unknown User";
+
+          // Store verification information in a 'verifications' collection
+          const verificationRef = doc(db, 'verifications', vehicleId);
+          await setDoc(verificationRef, {
+            timestamp: timestamp,
+            grade: grade,
+            user: user ? (user.displayName || user.email) : "Unknown User"
+          });
+
           navigate('/labels');
         } catch (error) {
           console.error("Error updating materials:", error);
+        } finally {
+          setValidationPopupVisible(false); // Close the popup
         }
       };
-    
+
+      const handleValidationCancel = () => {
+        setValidationPopupVisible(false); // Close the popup
+      };
+
       const getMaterielStyle = (materielId) => {
         if (materielStatuses[materielId] === 'anomalie') {
           return { backgroundColor: 'orange' };
@@ -182,25 +207,28 @@ import React, { useState, useEffect } from 'react';
         }
         return {};
       };
-    
+
       const showCommentPopup = (materielId) => {
         setSelectedMaterielId(materielId);
         setCommentPopupVisible(true);
       };
-    
+
       const closeCommentPopup = () => {
         setCommentPopupVisible(false);
         setSelectedMaterielId(null);
       };
-    
+
       const handleEmplacementFilterChange = (e) => {
         setEmplacementFilter(e.target.value);
       };
-    
+
       const filteredMateriels = emplacementFilter === ''
         ? materiels
         : materiels.filter(materiel => materiel.emplacement === emplacementFilter);
-    
+
+      const anomalies = filteredMateriels.filter(materiel => materielStatuses[materiel.id] === 'anomalie');
+      const manquants = filteredMateriels.filter(materiel => materielStatuses[materiel.id] === 'manquant');
+
       return (
         <div className="verification">
           <div className="filter-container">
@@ -282,10 +310,10 @@ import React, { useState, useEffect } from 'react';
               ))}
             </div>
           ) : (
-            <p>No materials found for this vehicle.</p>
+            <p>Aucun matériel trouvé pour ce véhicule.</p>
           )}
-          <button className="validate-button" onClick={handleValidate}>VALIDER</button>
-    
+          <button className="validate-button" onClick={handleValidateClick}>VALIDER</button>
+
           {selectedMaterielId && !commentPopupVisible && (
             <CommentPopup
               materielId={selectedMaterielId}
@@ -293,7 +321,7 @@ import React, { useState, useEffect } from 'react';
               onClose={() => setSelectedMaterielId(null)}
             />
           )}
-    
+
           {commentPopupVisible && userProfile && (
             <CommentDisplayPopup
               materielId={selectedMaterielId}
@@ -302,18 +330,28 @@ import React, { useState, useEffect } from 'react';
               onClose={closeCommentPopup}
             />
           )}
+
+          {validationPopupVisible && (
+            <ValidationPopup
+              anomalies={anomalies}
+              manquants={manquants}
+              comments={comments}
+              onConfirm={handleValidationConfirm}
+              onCancel={handleValidationCancel}
+            />
+          )}
         </div>
       );
     }
-    
+
     function CommentPopup({ materielId, onCommentSubmit, onClose }) {
       const [commentText, setCommentText] = useState('');
-    
+
       const handleSubmit = () => {
         onCommentSubmit(materielId, commentText);
         onClose();
       };
-    
+
       return (
         <div className="comment-popup">
           <div className="comment-popup-content">
@@ -331,12 +369,12 @@ import React, { useState, useEffect } from 'react';
         </div>
       );
     }
-    
+
     function CommentDisplayPopup({ materielId, comment, userPhoto, onClose }) {
       const lines = comment ? comment.split('\n') : [];
       const timestampSignature = lines.length > 0 ? lines[0] : '';
       const commentText = lines.length > 1 ? lines[1] : '';
-    
+
       return (
         <div className="comment-popup">
           <div className="comment-popup-content">
@@ -357,5 +395,48 @@ import React, { useState, useEffect } from 'react';
         </div>
       );
     }
-    
+
+    function ValidationPopup({ anomalies, manquants, comments, onConfirm, onCancel }) {
+      return (
+        <div className="comment-popup">
+          <div className="comment-popup-content" style={{ textAlign: 'left' }}>
+            <h3>Résumé de la vérification</h3>
+            {anomalies.length > 0 && (
+              <div>
+                <h4>Anomalies:</h4>
+                <ul>
+                  {anomalies.map(materiel => (
+                    <li key={materiel.id}>
+                      {materiel.denomination}
+                      {comments[materiel.id] && <p>Commentaire: {comments[materiel.id]}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {manquants.length > 0 && (
+              <div>
+                <h4>Manquants:</h4>
+                <ul>
+                  {manquants.map(materiel => (
+                    <li key={materiel.id}>
+                      {materiel.denomination}
+                      {comments[materiel.id] && <p>Commentaire: {comments[materiel.id]}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {anomalies.length === 0 && manquants.length === 0 && (
+              <p>Aucune anomalie ou élément manquant.</p>
+            )}
+            <div className="comment-popup-buttons">
+              <button onClick={onConfirm}>Confirmer</button>
+              <button onClick={onCancel}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     export default Verification;

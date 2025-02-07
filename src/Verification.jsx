@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    function Verification() {
+    function Verification({ user }) {
       const { vehicleId } = useParams();
       const [materiels, setMateriels] = useState([]);
       const [materielStatuses, setMaterielStatuses] = useState({}); // 'ok', 'anomalie', 'manquant'
@@ -20,32 +20,8 @@ import React, { useState, useEffect } from 'react';
       const navigate = useNavigate();
       const [vehicleAffection, setVehicleAffection] = useState('');
       const [userProfile, setUserProfile] = useState(null); // User profile state
-      const [user, setUser] = useState(null); // Current user state
     
       const auth = getAuth(app); // Get Firebase auth instance
-    
-      useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          setUser(user); // Set the user when auth state changes
-    
-          if (user) {
-            // Fetch user profile from 'users' collection
-            const userRef = doc(db, 'users', user.uid);
-            const userSnap = await getDoc(userRef);
-    
-            if (userSnap.exists()) {
-              setUserProfile(userSnap.data());
-            } else {
-              console.log('No such document!');
-              setUserProfile(null);
-            }
-          } else {
-            setUserProfile(null);
-          }
-        });
-    
-        return () => unsubscribe(); // Cleanup subscription on unmount
-      }, [auth]);
     
       useEffect(() => {
         const fetchVehicleAffection = async () => {
@@ -100,6 +76,30 @@ import React, { useState, useEffect } from 'react';
     
         fetchMateriels();
       }, [vehicleId, vehicleAffection]);
+    
+      useEffect(() => {
+        if (user) {
+          // Fetch user profile from 'users' collection
+          const userRef = doc(db, 'users', user.uid);
+          const getUserProfile = async () => {
+            try {
+              const userSnap = await getDoc(userRef);
+              if (userSnap.exists()) {
+                setUserProfile(userSnap.data());
+              } else {
+                console.log('No such document!');
+                setUserProfile(null);
+              }
+            } catch (error) {
+              console.error("Error fetching user profile:", error);
+              setUserProfile(null);
+            }
+          };
+          getUserProfile();
+        } else {
+          setUserProfile(null);
+        }
+      }, [user]);
     
       const handleStatusChange = async (materielId, status) => {
         try {

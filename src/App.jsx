@@ -9,15 +9,26 @@ import React, { useState, useEffect } from 'react';
     import Materiels from './Materiels';
     import Parametres from './Parametres';
     import Verification from './Verification';
-    import Login from './Login'; // Import Login component
-    import Register from './Register'; // Import Register component
+    import Login from './Login';
+    import Register from './Register';
+    import { getAuth, onAuthStateChanged } from 'firebase/auth';
     import './App.css';
     
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
     function App() {
+      const [user, setUser] = useState(null);
+      const auth = getAuth(app);
+    
+      useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          setUser(user);
+        });
+    
+        return () => unsubscribe();
+      }, [auth]);
+    
       return (
         <Router>
           <div className="app">
@@ -27,29 +38,34 @@ import React, { useState, useEffect } from 'react';
     
             <Routes>
               <Route path="/" element={<Home />} />
-              <Route path="/labels" element={<LabelsPage />} />
+              <Route path="/labels" element={<LabelsPage user={user} />} />
               <Route path="/materiels" element={<Materiels />} />
-              <Route path="/parametres" element={<Parametres />} />
-              <Route path="/verification/:vehicleId" element={<Verification />} />
-              <Route path="/login" element={<Login />} /> {/* Add Login route */}
-              <Route path="/register" element={<Register />} /> {/* Add Register route */}
+              <Route path="/parametres" element={user ? <Parametres /> : <Home />} />
+              {/* Page de connexion accessible */}
+              <Route path="/login" element={<Login />} />
+              {/* Page d'enregistrement accessible */}
+              <Route path="/register" element={<Register />} />
+              <Route path="/verification/:vehicleId" element={<Verification user={user} />} />
             </Routes>
     
             <footer className="app-footer">
               <Link to="/" className="home-icon">🏠</Link>
               <Link to="/labels" className="vehicle-icon">🚒</Link>
               <Link to="/materiels" className="materiels-icon">🛠️</Link>
-              <Link to="/parametres" className="parametres-icon">⚙️</Link>
-            </footer>
-          </div>
-        </Router>
+              {user ? (
+                <Link to="/parametres" className="parametres-icon">⚙️</Link>
+              ) : null}
+            </footer >
+          </div >
+        </Router >
       );
     }
     
-    function LabelsPage() {
+    function LabelsPage({ user }) {
       const [labels, setLabels] = useState([]);
       const [selectedLabel, setSelectedLabel] = useState(null);
       const [isEditing, setIsEditing] = useState(false);
+      const auth = getAuth(app);
     
       useEffect(() => {
         const fetchLabels = async () => {
@@ -103,9 +119,9 @@ import React, { useState, useEffect } from 'react';
                 label={label}
                 onIconClick={() => handleIconClick(label)}
                 onVerifyClick={() => {
-                  // Navigate to the verification page with the vehicle's ID
                   window.location.href = `/verification/${label.id}`;
                 }}
+                user={user}
               />
             ))}
           </div>
@@ -118,7 +134,7 @@ import React, { useState, useEffect } from 'react';
               onSave={handleSave}
             />
           )}
-        </div>
+        </div >
       );
     }
     

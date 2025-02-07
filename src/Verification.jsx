@@ -142,8 +142,8 @@ import React, { useState, useEffect } from 'react';
       const handleCommentSubmit = async (materielId, commentText) => {
         const timestamp = new Date().toLocaleString();
         // Assuming you have a way to store and retrieve the user's grade
-        const grade = userProfile && userProfile.grade ? userProfile.grade : "Pompier"; // Default grade
-        const signature = user ? `${grade} ${user.displayName || user.email}` : "Unknown User"; // Use display name or email
+        const grade = userProfile && userProfile.Grade ? userProfile.Grade : "Pompier"; // Default grade
+        const signature = user ? `${grade} ${userProfile.name || user.email}` : "Unknown User"; // Use display name or email
         const comment = `${timestamp} - ${signature}\n${commentText}`;
 
         setComments(prevComments => ({
@@ -183,8 +183,8 @@ import React, { useState, useEffect } from 'react';
 
           // Record validation timestamp, grade, and user name
           const timestamp = new Date().toLocaleString();
-          const grade = userProfile && userProfile.grade ? userProfile.grade : "Pompier";
-          const signature = user ? `${grade} ${user.displayName || user.email}` : "Unknown User";
+          const grade = userProfile && userProfile.Grade ? userProfile.Grade : "Pompier";
+          const signature = user ? `${grade} ${userProfile.name || user.email}` : "Unknown User";
 
           // Store verification information in a 'verifications' collection
           const verificationRef = doc(db, 'verifications', vehicleId);
@@ -334,7 +334,7 @@ import React, { useState, useEffect } from 'react';
             <CommentDisplayPopup
               materielId={selectedMaterielId}
               comment={comments[selectedMaterielId]}
-              userPhoto={userProfile.photoURL} // Assuming userProfile has a photoURL
+              userPhoto={userProfile.userPhoto} // Assuming userProfile has a photoURL
               onClose={closeCommentPopup}
             />
           )}
@@ -387,7 +387,7 @@ import React, { useState, useEffect } from 'react';
         <div className="comment-popup">
           <div className="comment-popup-content">
             <h3>Commentaire</h3>
-            <div className="user-photo-bubble">
+            <div className="user-photo-bubble" style={{ backgroundImage: `url(${userPhoto})` }}>
               <img src={userPhoto} alt="User Photo" />
             </div>
             <p style={{ textAlign: 'center' }}>
